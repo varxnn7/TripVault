@@ -1,0 +1,73 @@
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.input-required {
+  color: var(--danger);
+  margin-left: 2px;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.input-focused .input-wrapper {
+  border-color: var(--text-tertiary);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.input-error .input-wrapper {
+  border-color: var(--danger);
+}
+
+.input-icon {
+  display: flex;
+  align-items: center;
+  padding-left: 14px;
+  color: var(--text-tertiary);
+  font-size: 1.1rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.input-textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+.input-error-text {
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
+/* Date/select inputs */
+.input-field::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}

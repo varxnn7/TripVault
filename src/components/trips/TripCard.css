@@ -1,0 +1,129 @@
+.trip-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-glow);
+}
+
+/* Cover */
+.trip-card-cover {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+  background: var(--bg-surface);
+}
+
+.trip-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+
+.trip-card:hover .trip-cover-img {
+  transform: scale(1.05);
+}
+
+.trip-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--text-muted);
+  background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+}
+
+.trip-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(10px);
+}
+
+.status-planning {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+.status-ongoing {
+  background: rgba(34, 197, 94, 0.2);
+  color: var(--success);
+}
+
+.status-completed {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+/* Body */
+.trip-card-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.trip-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  letter-spacing: -0.01em;
+}
+
+.trip-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trip-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.trip-card-desc {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Footer */
+.trip-card-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.trip-view-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.trip-card:hover .trip-view-link {
+  color: var(--text-primary);
+}
