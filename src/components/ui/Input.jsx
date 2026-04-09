@@ -50,6 +50,7 @@ const Input = ({
             className="input-field"
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onWheel={(e) => e.target.blur()}
             {...props}
           />
         )}

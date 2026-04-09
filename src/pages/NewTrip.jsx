@@ -45,7 +45,7 @@ const NewTrip = () => {
       });
       addToast('Trip created successfully!', 'success');
       navigate(`/trip/${tripId}`);
-    } catch (err) {
+    } catch {
       addToast('Failed to create trip', 'error');
     }
     setLoading(false);
@@ -69,6 +69,7 @@ const NewTrip = () => {
             onChange={handleChange('title')}
             placeholder="e.g., Kerala Backwaters Adventure"
             icon={<IoAirplane />}
+            list="trip-title-suggestions"
             required
           />
           <Input
@@ -86,6 +87,7 @@ const NewTrip = () => {
               value={form.startDate}
               onChange={handleChange('startDate')}
               icon={<IoCalendar />}
+              required
             />
             <Input
               label="End Date"
@@ -93,24 +95,38 @@ const NewTrip = () => {
               value={form.endDate}
               onChange={handleChange('endDate')}
               icon={<IoCalendar />}
+              required
             />
           </div>
           <Input
-            label="Budget (optional)"
+            label="Budget"
             type="number"
             value={form.budget}
             onChange={handleChange('budget')}
             placeholder="e.g., 50000"
             icon={<IoWallet />}
+            required
           />
           <Input
-            label="Description (optional)"
+            label="Description"
             type="textarea"
             value={form.description}
             onChange={handleChange('description')}
             placeholder="Describe your trip plans..."
             icon={<IoDocumentText />}
+            required
           />
+
+          <datalist id="trip-title-suggestions">
+            <option value="Summer Vacation" />
+            <option value="Weekend Getaway" />
+            <option value="Business Trip" />
+            <option value="Family Holiday" />
+            <option value="Solo Adventure" />
+            <option value="Honeymoon" />
+            <option value="Road Trip" />
+            <option value="Backpacking" />
+          </datalist>
 
           <div className="form-field">
             <label className="input-label">Status</label>

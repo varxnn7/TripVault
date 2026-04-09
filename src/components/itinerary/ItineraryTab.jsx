@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { IoAdd, IoTime, IoLocation, IoTrash, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { IoAdd, IoTime, IoLocation, IoTrash, IoPencil, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -18,6 +18,7 @@ const ItineraryTab = ({ tripId }) => {
   const [showModal, setShowModal] = useState(false);
   const [expandedDay, setExpandedDay] = useState(null);
   const [showActivity, setShowActivity] = useState(null);
+  const [editingActivity, setEditingActivity] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dayForm, setDayForm] = useState({ dayNumber: '', date: '', title: '' });
   const [activityForm, setActivityForm] = useState({ time: '', title: '', location: '', notes: '' });
@@ -58,6 +59,29 @@ const ItineraryTab = ({ tripId }) => {
       addToast('Activity added', 'success');
     } catch {
       addToast('Failed to add activity', 'error');
+    }
+    setLoading(false);
+  };
+
+  const startEditActivity = (dayId, act) => {
+    setActivityForm({ time: act.time || '', title: act.title || '', location: act.location || '', notes: act.notes || '' });
+    setEditingActivity({ dayId, actId: act.id });
+    setShowActivity(null);
+  };
+
+  const handleUpdateActivity = async (dayId, existingActivities) => {
+    if (!activityForm.title) return;
+    setLoading(true);
+    try {
+      const activities = existingActivities.map(a => 
+        a.id === editingActivity.actId ? { ...activityForm, id: a.id } : a
+      );
+      await updateItineraryDay(user.uid, tripId, dayId, { activities });
+      setEditingActivity(null);
+      setActivityForm({ time: '', title: '', location: '', notes: '' });
+      addToast('Activity updated', 'success');
+    } catch {
+      addToast('Failed to update activity', 'error');
     }
     setLoading(false);
   };
@@ -128,17 +152,39 @@ const ItineraryTab = ({ tripId }) => {
                             <div className="timeline-line" />
                           </div>
                           <div className="activity-body">
-                            <div className="activity-top">
-                              <div>
-                                {act.time && <span className="activity-time">{act.time}</span>}
-                                <h4 className="activity-title">{act.title}</h4>
+                            {editingActivity?.actId === act.id ? (
+                              <div className="activity-form glass animate-fade-in" style={{ padding: '16px', marginTop: '8px' }}>
+                                <div className="form-row">
+                                  <Input label="Time" value={activityForm.time} onChange={(e) => setActivityForm({ ...activityForm, time: e.target.value })} placeholder="e.g., 09:00 AM" />
+                                  <Input label="Activity" value={activityForm.title} onChange={(e) => setActivityForm({ ...activityForm, title: e.target.value })} placeholder="What to do?" required />
+                                </div>
+                                <Input label="Location" value={activityForm.location} onChange={(e) => setActivityForm({ ...activityForm, location: e.target.value })} placeholder="Where?" />
+                                <Input label="Notes" type="textarea" value={activityForm.notes} onChange={(e) => setActivityForm({ ...activityForm, notes: e.target.value })} placeholder="Additional details..." />
+                                <div className="form-actions">
+                                  <Button variant="ghost" size="sm" onClick={() => setEditingActivity(null)}>Cancel</Button>
+                                  <Button size="sm" loading={loading} onClick={() => handleUpdateActivity(day.id, day.activities)}>Save</Button>
+                                </div>
                               </div>
-                              <button className="activity-delete" onClick={() => handleDeleteActivity(day.id, act.id, day.activities)}>
-                                <IoTrash />
-                              </button>
-                            </div>
-                            {act.location && <p className="activity-location"><IoLocation /> {act.location}</p>}
-                            {act.notes && <p className="activity-notes">{act.notes}</p>}
+                            ) : (
+                              <>
+                                <div className="activity-top">
+                                  <div>
+                                    {act.time && <span className="activity-time">{act.time}</span>}
+                                    <h4 className="activity-title">{act.title}</h4>
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="activity-edit" onClick={() => startEditActivity(day.id, act)} style={{ color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', display: 'flex', alignItems: 'center' }}>
+                                      <IoPencil />
+                                    </button>
+                                    <button className="activity-delete" onClick={() => handleDeleteActivity(day.id, act.id, day.activities)}>
+                                      <IoTrash />
+                                    </button>
+                                  </div>
+                                </div>
+                                {act.location && <p className="activity-location"><IoLocation /> {act.location}</p>}
+                                {act.notes && <p className="activity-notes">{act.notes}</p>}
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -149,7 +195,7 @@ const ItineraryTab = ({ tripId }) => {
 
                   <div className="day-actions">
                     <Button size="sm" variant="secondary" icon={<IoAdd />}
-                      onClick={() => { setShowActivity(day.id); setActivityForm({ time: '', title: '', location: '', notes: '' }); }}>
+                      onClick={() => { setShowActivity(day.id); setEditingActivity(null); setActivityForm({ time: '', title: '', location: '', notes: '' }); }}>
                       Add Activity
                     </Button>
                     <Button size="sm" variant="ghost" icon={<IoTrash />} onClick={() => handleDeleteDay(day.id)}

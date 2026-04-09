@@ -63,6 +63,7 @@ const TripDetail = () => {
       setLoading(false);
     };
     loadTrip();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, id]);
 
   const handleDelete = async () => {
@@ -205,14 +206,26 @@ const TripDetail = () => {
       {/* Edit Modal */}
       <Modal isOpen={showEdit} onClose={() => setShowEdit(false)} title="Edit Trip" size="md">
         <form onSubmit={handleEdit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <Input label="Title" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} required />
+          <Input label="Title" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} list="edit-trip-title-suggestions" required />
           <Input label="Destination" value={editForm.destination} onChange={(e) => setEditForm({ ...editForm, destination: e.target.value })} required />
           <div className="form-row">
-            <Input label="Start Date" type="date" value={editForm.startDate} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} />
-            <Input label="End Date" type="date" value={editForm.endDate} onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })} />
+            <Input label="Start Date" type="date" value={editForm.startDate} onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })} required />
+            <Input label="End Date" type="date" value={editForm.endDate} onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })} required />
           </div>
-          <Input label="Budget" type="number" value={editForm.budget} onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })} />
-          <Input label="Description" type="textarea" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+          <Input label="Budget" type="number" value={editForm.budget} onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })} required />
+          <Input label="Description" type="textarea" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} required />
+          
+          <datalist id="edit-trip-title-suggestions">
+            <option value="Summer Vacation" />
+            <option value="Weekend Getaway" />
+            <option value="Business Trip" />
+            <option value="Family Holiday" />
+            <option value="Solo Adventure" />
+            <option value="Honeymoon" />
+            <option value="Road Trip" />
+            <option value="Backpacking" />
+          </datalist>
+
           <div className="form-field">
             <label className="input-label">Status</label>
             <div className="status-options">

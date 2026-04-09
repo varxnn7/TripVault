@@ -3,13 +3,38 @@ import { IoAdd, IoTrash, IoCamera, IoLocation, IoJournal } from 'react-icons/io5
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { subscribeToJournal, addJournalEntry, deleteJournalEntry } from '../../firebase/firestore';
-import { uploadTripPhoto } from '../../firebase/storage';
 import { formatDate } from '../../utils/formatDate';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import Input from '../ui/Input';
 import EmptyState from '../ui/EmptyState';
 import './JournalTab.css';
+
+const uploadToCloudinary = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  // Defaulting to the user-provided 'ml_default' for both if env vars are missing
+  formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'ml_default');
+  
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'ml_default';
+  try {
+    const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Failed to upload image to Cloudinary');
+    }
+    
+    return data.secure_url;
+  } catch (error) {
+    console.error("Detailed Cloudinary Error:", error);
+    throw error;
+  }
+};
 
 const JournalTab = ({ tripId }) => {
   const { user } = useAuth();
@@ -37,8 +62,14 @@ const JournalTab = ({ tripId }) => {
       if (photos.length > 0) {
         setUploading(true);
         for (const file of photos) {
-          const url = await uploadTripPhoto(user.uid, tripId, file);
-          photoUrls.push(url);
+          try {
+            const url = await uploadToCloudinary(file);
+            photoUrls.push(url);
+          } catch (error) {
+            console.error('Cloudinary upload error for file', file.name, error);
+            addToast(`Upload failed: ${error.message}`, 'error');
+            throw error; // Stop adding the journal entry if photo upload fails!
+          }
         }
         setUploading(false);
       }
