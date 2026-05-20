@@ -10,6 +10,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  collectionGroup,
 } from "firebase/firestore";
 import { db } from "./config";
 
@@ -164,3 +165,73 @@ export const subscribeToJournal = (userId, tripId, callback) => {
     callback(entries);
   });
 };
+
+// ============ ISSUES & SUPPORT ============
+export const createIssue = async (userId, issueData) => {
+  const ref = await addDoc(collection(db, "users", userId, "issues"), {
+    ...issueData,
+    status: "Open",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  return ref.id;
+};
+
+export const subscribeToIssues = (userId, callback) => {
+  const q = query(
+    collection(db, "users", userId, "issues"),
+    orderBy("createdAt", "desc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const issues = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(issues);
+  });
+};
+
+export const addIssueComment = async (userId, issueId, commentData) => {
+  const ref = await addDoc(
+    collection(db, "users", userId, "issues", issueId, "comments"),
+    {
+      ...commentData,
+      createdAt: serverTimestamp(),
+    }
+  );
+  
+  // Also update issue's updatedAt timestamp
+  await updateDoc(doc(db, "users", userId, "issues", issueId), {
+    updatedAt: serverTimestamp(),
+  });
+  
+  return ref.id;
+};
+
+export const subscribeToIssueComments = (userId, issueId, callback) => {
+  const q = query(
+    collection(db, "users", userId, "issues", issueId, "comments"),
+    orderBy("createdAt", "asc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const comments = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(comments);
+  });
+};
+
+export const updateIssueStatus = async (userId, issueId, status) => {
+  await updateDoc(doc(db, "users", userId, "issues", issueId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const subscribeToAllIssues = (callback) => {
+  const q = collectionGroup(db, "issues");
+  return onSnapshot(q, (snapshot) => {
+    const issues = snapshot.docs.map((d) => {
+      // Find userId from the ref path: users/userId/issues/issueId
+      const userId = d.ref.parent.parent.id;
+      return { id: d.id, userId, ...d.data() };
+    });
+    callback(issues);
+  });
+};
+

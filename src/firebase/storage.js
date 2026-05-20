@@ -22,3 +22,12 @@ export const deleteTripPhoto = async (photoUrl) => {
     console.error("Error deleting photo:", error);
   }
 };
+
+export const uploadIssuePhoto = async (userId, file) => {
+  const fileName = `${Date.now()}_${file.name}`;
+  const storageRef = ref(storage, `users/${userId}/issues/${fileName}`);
+  const snapshot = await uploadBytes(storageRef, file);
+  const url = await getDownloadURL(snapshot.ref);
+  return url;
+};
+

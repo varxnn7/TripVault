@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { IoMenu, IoClose, IoPersonCircle, IoLogOutOutline, IoSettingsOutline } from 'react-icons/io5';
+import { IoMenu, IoClose, IoPersonCircle, IoLogOutOutline, IoSettingsOutline, IoHelpCircleOutline } from 'react-icons/io5';
 import { useAuth } from '../../contexts/AuthContext';
 import { signOut } from '../../firebase/auth';
 import './Navbar.css';
@@ -51,6 +51,9 @@ const Navbar = () => {
               <Link to="/trip/new" className={`nav-link ${location.pathname === '/trip/new' ? 'active' : ''}`}>
                 New Trip
               </Link>
+              <Link to="/support" className={`nav-link ${location.pathname === '/support' ? 'active' : ''}`}>
+                Support
+              </Link>
             </div>
 
             <div className="navbar-right">
@@ -73,6 +76,9 @@ const Navbar = () => {
                     <div className="profile-divider" />
                     <Link to="/profile" className="profile-item">
                       <IoSettingsOutline /> Settings
+                    </Link>
+                    <Link to="/support" className="profile-item">
+                      <IoHelpCircleOutline /> Support
                     </Link>
                     <button className="profile-item profile-logout" onClick={handleSignOut}>
                       <IoLogOutOutline /> Sign Out

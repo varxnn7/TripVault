@@ -12,6 +12,8 @@ import Dashboard from './pages/Dashboard';
 import NewTrip from './pages/NewTrip';
 import TripDetail from './pages/TripDetail';
 import Profile from './pages/Profile';
+import Support from './pages/Support';
+import AdminSupport from './pages/AdminSupport';
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -31,6 +33,8 @@ const AppRoutes = () => {
         <Route path="/trip/new" element={<ProtectedRoute><NewTrip /></ProtectedRoute>} />
         <Route path="/trip/:id" element={<ProtectedRoute><TripDetail /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+        <Route path="/admin/support" element={<ProtectedRoute><AdminSupport /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toast />
