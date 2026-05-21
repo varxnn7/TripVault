@@ -3,6 +3,7 @@ import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { IoMail, IoLockClosed } from 'react-icons/io5';
 import { FcGoogle } from 'react-icons/fc';
 import { signInWithEmail, signInWithGoogle } from '../firebase/auth';
+import { getUserDoc } from '../firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import Button from '../components/ui/Button';
@@ -24,9 +25,14 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await signInWithEmail(email, password);
+      const loggedUser = await signInWithEmail(email, password);
+      const profile = await getUserDoc(loggedUser.uid);
       addToast('Welcome back!', 'success');
-      navigate('/dashboard');
+      if (profile?.role === 'admin') {
+        navigate('/admin/support');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       addToast(err.message.replace('Firebase: ', ''), 'error');
     }
@@ -36,9 +42,14 @@ const Login = () => {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      await signInWithGoogle();
+      const loggedUser = await signInWithGoogle();
+      const profile = await getUserDoc(loggedUser.uid);
       addToast('Welcome back!', 'success');
-      navigate('/dashboard');
+      if (profile?.role === 'admin') {
+        navigate('/admin/support');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       addToast(err.message.replace('Firebase: ', ''), 'error');
     }

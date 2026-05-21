@@ -2,11 +2,13 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   onSnapshot,
   serverTimestamp,
@@ -167,9 +169,13 @@ export const subscribeToJournal = (userId, tripId, callback) => {
 };
 
 // ============ ISSUES & SUPPORT ============
+// Uses top-level 'support_tickets' collection so admin can query directly
+// without needing collectionGroup indexes or subcollection permission tricks.
+
 export const createIssue = async (userId, issueData) => {
-  const ref = await addDoc(collection(db, "users", userId, "issues"), {
+  const ref = await addDoc(collection(db, "support_tickets"), {
     ...issueData,
+    userId,
     status: "Open",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -178,36 +184,52 @@ export const createIssue = async (userId, issueData) => {
 };
 
 export const subscribeToIssues = (userId, callback) => {
+  // Filter by userId so Firestore security rules allow the query
+  // (reading only your own tickets - no index needed for equality + sort client-side)
   const q = query(
-    collection(db, "users", userId, "issues"),
-    orderBy("createdAt", "desc")
+    collection(db, "support_tickets"),
+    where("userId", "==", userId)
   );
-  return onSnapshot(q, (snapshot) => {
-    const issues = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-    callback(issues);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const issues = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => {
+          const tA = a.createdAt?.seconds || 0;
+          const tB = b.createdAt?.seconds || 0;
+          return tB - tA;
+        });
+      callback(issues);
+    },
+    (err) => {
+      console.error("subscribeToIssues error:", err);
+      callback([]);
+    }
+  );
 };
 
 export const addIssueComment = async (userId, issueId, commentData) => {
   const ref = await addDoc(
-    collection(db, "users", userId, "issues", issueId, "comments"),
+    collection(db, "support_tickets", issueId, "comments"),
     {
       ...commentData,
       createdAt: serverTimestamp(),
     }
   );
-  
-  // Also update issue's updatedAt timestamp
-  await updateDoc(doc(db, "users", userId, "issues", issueId), {
+
+  // Update parent ticket's updatedAt
+  await updateDoc(doc(db, "support_tickets", issueId), {
     updatedAt: serverTimestamp(),
   });
-  
+
   return ref.id;
 };
 
 export const subscribeToIssueComments = (userId, issueId, callback) => {
+  // userId param kept for API compatibility but unused (flat collection now)
   const q = query(
-    collection(db, "users", userId, "issues", issueId, "comments"),
+    collection(db, "support_tickets", issueId, "comments"),
     orderBy("createdAt", "asc")
   );
   return onSnapshot(q, (snapshot) => {
@@ -217,21 +239,30 @@ export const subscribeToIssueComments = (userId, issueId, callback) => {
 };
 
 export const updateIssueStatus = async (userId, issueId, status) => {
-  await updateDoc(doc(db, "users", userId, "issues", issueId), {
+  // userId param kept for API compatibility
+  await updateDoc(doc(db, "support_tickets", issueId), {
     status,
     updatedAt: serverTimestamp(),
   });
 };
 
 export const subscribeToAllIssues = (callback) => {
-  const q = collectionGroup(db, "issues");
-  return onSnapshot(q, (snapshot) => {
-    const issues = snapshot.docs.map((d) => {
-      // Find userId from the ref path: users/userId/issues/issueId
-      const userId = d.ref.parent.parent.id;
-      return { id: d.id, userId, ...d.data() };
-    });
-    callback(issues);
-  });
+  // Admin reads ALL tickets from the flat top-level collection
+  const q = query(
+    collection(db, "support_tickets"),
+    orderBy("updatedAt", "desc")
+  );
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const issues = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      callback(issues);
+    },
+    (err) => {
+      console.error("subscribeToAllIssues error:", err);
+      callback([]);
+    }
+  );
 };
+
 

@@ -61,6 +61,7 @@ const Support = () => {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [submittingIssue, setSubmittingIssue] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [issueTitle, setIssueTitle] = useState('');
   const [issueCategory, setIssueCategory] = useState('bug');
   const [issueDesc, setIssueDesc] = useState('');
@@ -217,7 +218,17 @@ const Support = () => {
     try {
       let photoUrl = null;
       if (attachmentFile) {
-        photoUrl = await uploadIssuePhoto(user.uid, attachmentFile);
+        setUploadingPhoto(true);
+        try {
+          photoUrl = await uploadIssuePhoto(user.uid, attachmentFile);
+        } catch (uploadErr) {
+          console.error('Screenshot upload error:', uploadErr);
+          addToast(`Screenshot upload failed: ${uploadErr.message}`, 'error');
+          setUploadingPhoto(false);
+          setSubmittingIssue(false);
+          return; // Stop — don't create the ticket without the screenshot
+        }
+        setUploadingPhoto(false);
       }
 
       const issueData = {
@@ -491,6 +502,12 @@ const Support = () => {
                     <textarea
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendReply(e);
+                        }
+                      }}
                       placeholder="Discuss details or post updates..."
                       className="discussion-textarea"
                       rows={2}
@@ -645,9 +662,9 @@ const Support = () => {
             <Button
               type="submit"
               loading={submittingIssue}
-              disabled={!issueTitle.trim() || !issueDesc.trim()}
+              disabled={!issueTitle.trim() || !issueDesc.trim() || submittingIssue}
             >
-              Submit Issue
+              {uploadingPhoto ? 'Uploading screenshot...' : submittingIssue ? 'Submitting...' : 'Submit Issue'}
             </Button>
           </div>
         </form>

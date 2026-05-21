@@ -6,7 +6,7 @@ import { signOut } from '../../firebase/auth';
 import './Navbar.css';
 
 const Navbar = () => {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,7 +37,7 @@ const Navbar = () => {
   return (
     <nav className="navbar glass">
       <div className="navbar-inner">
-        <Link to={user ? '/dashboard' : '/'} className="navbar-logo">
+        <Link to={user ? (userProfile?.role === 'admin' ? '/admin/support' : '/dashboard') : '/'} className="navbar-logo">
           <span className="logo-icon">◆</span>
           <span className="logo-text">TripVault</span>
         </Link>
@@ -45,15 +45,23 @@ const Navbar = () => {
         {user ? (
           <>
             <div className={`navbar-links ${menuOpen ? 'navbar-links-open' : ''}`}>
-              <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
-                Dashboard
-              </Link>
-              <Link to="/trip/new" className={`nav-link ${location.pathname === '/trip/new' ? 'active' : ''}`}>
-                New Trip
-              </Link>
-              <Link to="/support" className={`nav-link ${location.pathname === '/support' ? 'active' : ''}`}>
-                Support
-              </Link>
+              {userProfile?.role === 'admin' ? (
+                <Link to="/admin/support" className={`nav-link ${location.pathname === '/admin/support' ? 'active' : ''}`}>
+                  Admin Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/dashboard" className={`nav-link ${location.pathname === '/dashboard' ? 'active' : ''}`}>
+                    Dashboard
+                  </Link>
+                  <Link to="/trip/new" className={`nav-link ${location.pathname === '/trip/new' ? 'active' : ''}`}>
+                    New Trip
+                  </Link>
+                  <Link to="/support" className={`nav-link ${location.pathname === '/support' ? 'active' : ''}`}>
+                    Support
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="navbar-right">
@@ -74,12 +82,20 @@ const Navbar = () => {
                       <p className="profile-email">{user.email}</p>
                     </div>
                     <div className="profile-divider" />
-                    <Link to="/profile" className="profile-item">
-                      <IoSettingsOutline /> Settings
-                    </Link>
-                    <Link to="/support" className="profile-item">
-                      <IoHelpCircleOutline /> Support
-                    </Link>
+                    {userProfile?.role === 'admin' ? (
+                      <Link to="/admin/support" className="profile-item">
+                        <IoSettingsOutline /> Admin Dashboard
+                      </Link>
+                    ) : (
+                      <>
+                        <Link to="/profile" className="profile-item">
+                          <IoSettingsOutline /> Settings
+                        </Link>
+                        <Link to="/support" className="profile-item">
+                          <IoHelpCircleOutline /> Support
+                        </Link>
+                      </>
+                    )}
                     <button className="profile-item profile-logout" onClick={handleSignOut}>
                       <IoLogOutOutline /> Sign Out
                     </button>
