@@ -50,7 +50,7 @@ export const signInWithEmail = async (email, password) => {
           role: "admin"
         });
         return result.user;
-      } catch (signUpErr) {
+      } catch {
         throw err;
       }
     }

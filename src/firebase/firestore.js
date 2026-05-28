@@ -2,7 +2,6 @@ import {
   collection,
   doc,
   addDoc,
-  setDoc,
   updateDoc,
   deleteDoc,
   getDoc,
@@ -12,7 +11,6 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  collectionGroup,
 } from "firebase/firestore";
 import { db } from "./config";
 
