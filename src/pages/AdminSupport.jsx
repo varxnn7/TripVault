@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { 
   IoAlertCircleOutline,
@@ -9,8 +9,11 @@ import {
   IoHammerOutline,
   IoSend,
   IoChatbubbleEllipsesOutline,
-  IoArrowBackOutline,
-  IoAnalyticsOutline
+  IoAnalyticsOutline,
+  IoTicketOutline,
+  IoTimeOutline,
+  IoCheckmarkDoneOutline,
+  IoFolderOpenOutline
 } from 'react-icons/io5';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -24,11 +27,27 @@ import Button from '../components/ui/Button';
 import Loader from '../components/ui/Loader';
 import './AdminSupport.css';
 
+// --- Utility: Get last N months as { key: 'Jan 25', short: 'Jan' } ---
+const getLastNMonths = (n = 6) => {
+  const result = [];
+  const now = new Date();
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    result.push({
+      year: d.getFullYear(),
+      month: d.getMonth(), // 0-indexed
+      short: d.toLocaleString('default', { month: 'short' }),
+      label: `${d.toLocaleString('default', { month: 'short' })} ${String(d.getFullYear()).slice(2)}`,
+    });
+  }
+  return result;
+};
+
 const AdminSupport = () => {
   const { user, userProfile, loading: authLoading } = useAuth();
   const { addToast } = useToast();
 
-  // State variables
+  // Core state
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -36,31 +55,35 @@ const AdminSupport = () => {
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
 
-  // Search and Filter states
+  // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [lightboxUrl, setLightboxUrl] = useState('');
 
   const commentsEndRef = useRef(null);
 
-  // Subscribe to all issues across all users
+  // --- Subscribe to all issues in real-time ---
   useEffect(() => {
     if (!user || userProfile?.role !== 'admin') return;
-
     setLoading(true);
     const unsubscribe = subscribeToAllIssues((data) => {
       setIssues(data);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [user, userProfile]);
 
-  // Sync selectedTicket when issues collection updates in real-time
+  // Sync selectedTicket when issues update
   useEffect(() => {
     if (selectedTicket) {
-      const updated = issues.find(i => i.id === selectedTicket.id && i.userId === selectedTicket.userId);
-      if (updated && (updated.status !== selectedTicket.status || updated.updatedAt !== selectedTicket.updatedAt)) {
+      const updated = issues.find(
+        (i) => i.id === selectedTicket.id && i.userId === selectedTicket.userId
+      );
+      if (
+        updated &&
+        (updated.status !== selectedTicket.status ||
+          updated.updatedAt !== selectedTicket.updatedAt)
+      ) {
         setSelectedTicket(updated);
       }
     }
@@ -72,144 +95,141 @@ const AdminSupport = () => {
       setComments([]);
       return;
     }
-
-    const unsubscribe = subscribeToIssueComments(selectedTicket.userId, selectedTicket.id, (data) => {
-      setComments(data);
-    });
-
+    const unsubscribe = subscribeToIssueComments(
+      selectedTicket.userId,
+      selectedTicket.id,
+      (data) => setComments(data)
+    );
     return () => unsubscribe();
   }, [selectedTicket]);
 
-  // Scroll to bottom of chat when new comments arrive
+  // Auto-scroll chat
   useEffect(() => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [comments]);
 
-  // Route Guard Checks
-  if (authLoading) {
-    return <Loader fullScreen text="Verifying admin credentials..." />;
-  }
+  // --- Resolution Time chart — last 6 months, purely from real data ---
+  const last6Months = useMemo(() => getLastNMonths(6), []);
 
-  if (!user || userProfile?.role !== 'admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const resolutionPoints = useMemo(() => {
+    // Build a per-month bucket from resolved issues only
+    const buckets = {};
+    last6Months.forEach((m) => {
+      buckets[`${m.year}-${m.month}`] = { sum: 0, count: 0 };
+    });
 
-  // --- ANALYTICS AND METRICS CALCULATIONS ---
-  const hasRealData = issues.length > 0;
-
-  // 1. Complaint Status Distribution
-  const realOpen = issues.filter(i => i.status === 'Open').length;
-  const realProgress = issues.filter(i => i.status === 'In Progress').length;
-  const realResolved = issues.filter(i => i.status === 'Resolved').length;
-  const realClosed = issues.filter(i => i.status === 'Closed').length;
-
-  const openCount = hasRealData ? realOpen : 39;
-  const progressCount = hasRealData ? realProgress : 27;
-  const resolvedCount = hasRealData ? realResolved : 16;
-  const closedCount = hasRealData ? realClosed : 18;
-  const totalCount = openCount + progressCount + resolvedCount + closedCount;
-
-  const pOpen = Math.round((openCount / totalCount) * 100) || 0;
-  const pProgress = Math.round((progressCount / totalCount) * 100) || 0;
-  const pResolved = Math.round((resolvedCount / totalCount) * 100) || 0;
-  const pClosed = 100 - pOpen - pProgress - pResolved; // Ensure mathematical sum is exactly 100%
-
-  // 2. Complaint Category Trends (Product, Service, Billing, Other)
-  const realProduct = issues.filter(i => i.category === 'bug' || i.category === 'feature').length;
-  const realService = issues.filter(i => i.category === 'itinerary').length;
-  const realBilling = issues.filter(i => i.category === 'expense').length;
-  const realOther = issues.filter(i => i.category === 'general').length;
-
-  const catProduct = hasRealData ? realProduct : 45;
-  const catService = hasRealData ? realService : 35;
-  const catBilling = hasRealData ? realBilling : 25;
-  const catOther = hasRealData ? realOther : 15;
-  const maxCatVal = Math.max(catProduct, catService, catBilling, catOther) || 1;
-
-  // 3. Resolution Time (Avg. Days)
-  const getAvgResolutionTime = () => {
-    const baseAverages = { Jan: 4.2, Feb: 1.8, Mar: 4.9, Apr: 3.1, May: 5.8, Jun: 4.4 };
-    const resolvedIssues = issues.filter(i => i.status === 'Resolved' && i.createdAt && i.updatedAt);
-    
-    if (resolvedIssues.length === 0) {
-      return baseAverages;
-    }
-
-    const monthlySum = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0 };
-    const monthlyCount = { Jan: 0, Feb: 0, Mar: 0, Apr: 0, May: 0, Jun: 0 };
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-
-    resolvedIssues.forEach(ticket => {
-      const createdDate = new Date(ticket.createdAt.seconds * 1000);
-      const updatedDate = new Date(ticket.updatedAt.seconds * 1000);
-      const durationDays = Math.max(0.1, (updatedDate - createdDate) / (1000 * 60 * 60 * 24));
-      
-      const monthIdx = createdDate.getMonth();
-      if (monthIdx >= 0 && monthIdx <= 5) {
-        const monthName = monthNames[monthIdx];
-        monthlySum[monthName] += durationDays;
-        monthlyCount[monthName] += 1;
+    issues.forEach((ticket) => {
+      if (ticket.status !== 'Resolved' || !ticket.createdAt?.seconds || !ticket.updatedAt?.seconds) return;
+      const createdDate  = new Date(ticket.createdAt.seconds * 1000);
+      const resolvedDate = new Date(ticket.updatedAt.seconds * 1000);
+      const durationDays = Math.max(0, (resolvedDate - createdDate) / (1000 * 60 * 60 * 24));
+      const key = `${createdDate.getFullYear()}-${createdDate.getMonth()}`;
+      if (buckets[key] !== undefined) {
+        buckets[key].sum   += durationDays;
+        buckets[key].count += 1;
       }
     });
 
-    const result = { ...baseAverages };
-    monthNames.forEach(m => {
-      if (monthlyCount[m] > 0) {
-        result[m] = parseFloat((monthlySum[m] / monthlyCount[m]).toFixed(1));
-      }
+    return last6Months.map((m, idx) => {
+      const key = `${m.year}-${m.month}`;
+      const b   = buckets[key];
+      const val = b.count > 0 ? parseFloat((b.sum / b.count).toFixed(1)) : null;
+      const x   = 30 + idx * 44;
+      // For SVG Y coord: null (no data) → place at baseline (90)
+      const maxDays = 10;
+      const y = val !== null ? 90 - Math.min((val / maxDays) * 65, 65) : 88;
+      return { x, y, val, month: m.short, hasData: val !== null };
     });
+  }, [issues, last6Months]);
 
-    return result;
-  };
+  // --- Route Guard ---
+  if (authLoading) return <Loader fullScreen text="Verifying admin credentials..." />;
+  if (!user || userProfile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
 
-  const resolutionTimes = getAvgResolutionTime();
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-  
-  // Map points to SVG coordinates for Spline Curve (Width 280, Height 90)
-  const points = monthNames.map((m, idx) => {
-    const x = 30 + idx * 44;
-    const val = resolutionTimes[m];
-    const y = 90 - (val / 8) * 65; // map 0-8 range to Y bounds
-    return { x, y, val, month: m };
-  });
+  // ======================================================
+  // ANALYTICS — 100% derived from live `issues` data only
+  // ======================================================
 
-  // Calculate Spline Wave Path Command
-  let linePath = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i+1];
+  const totalIssues = issues.length;
+
+  // KPI Counts
+  const openCount     = issues.filter((i) => i.status === 'Open').length;
+  const progressCount = issues.filter((i) => i.status === 'In Progress').length;
+  const resolvedCount = issues.filter((i) => i.status === 'Resolved').length;
+  const closedCount   = issues.filter((i) => i.status === 'Closed').length;
+
+  // Donut percentages (only when there is data)
+  const pOpen     = totalIssues ? Math.round((openCount     / totalIssues) * 100) : 0;
+  const pProgress = totalIssues ? Math.round((progressCount / totalIssues) * 100) : 0;
+  const pResolved = totalIssues ? Math.round((resolvedCount / totalIssues) * 100) : 0;
+  const pClosed   = totalIssues ? (100 - pOpen - pProgress - pResolved) : 0;
+
+  // Category counts — use actual Firestore category field values
+  const catBug      = issues.filter((i) => i.category === 'bug').length;
+  const catFeature  = issues.filter((i) => i.category === 'feature').length;
+  const catExpense  = issues.filter((i) => i.category === 'expense').length;
+  const catItinerary = issues.filter((i) => i.category === 'itinerary').length;
+  const catGeneral  = issues.filter((i) => i.category === 'general').length;
+
+  const categories = [
+    { label: 'Bug Report',      value: catBug,       color: '#ef4444' },
+    { label: 'Feature Request', value: catFeature,   color: '#8b5cf6' },
+    { label: 'Expense Tracker', value: catExpense,   color: '#f59e0b' },
+    { label: 'Itinerary',       value: catItinerary, color: '#3b82f6' },
+    { label: 'General',         value: catGeneral,   color: '#6b7280' },
+  ];
+  const maxCatVal = Math.max(...categories.map((c) => c.value), 1);
+
+  // Build spline path from resolution points
+  let linePath = `M ${resolutionPoints[0].x} ${resolutionPoints[0].y}`;
+  for (let i = 0; i < resolutionPoints.length - 1; i++) {
+    const p0 = resolutionPoints[i];
+    const p1 = resolutionPoints[i + 1];
     const cpX1 = p0.x + 22;
     const cpY1 = p0.y;
     const cpX2 = p1.x - 22;
     const cpY2 = p1.y;
     linePath += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
   }
-  const areaPath = `${linePath} L ${points[points.length-1].x} 90 L ${points[0].x} 90 Z`;
+  const areaPath = `${linePath} L ${resolutionPoints[resolutionPoints.length - 1].x} 90 L ${resolutionPoints[0].x} 90 Z`;
 
-  // Filter and sort tickets client-side
+  // Average resolution time across all time (for KPI)
+  const allResolved = issues.filter(
+    (i) => i.status === 'Resolved' && i.createdAt?.seconds && i.updatedAt?.seconds
+  );
+  const avgResolutionDays =
+    allResolved.length > 0
+      ? (
+          allResolved.reduce((sum, i) => {
+            const days = (i.updatedAt.seconds - i.createdAt.seconds) / 86400;
+            return sum + Math.max(0, days);
+          }, 0) / allResolved.length
+        ).toFixed(1)
+      : '—';
+
+  // --- Filtered & sorted ticket list ---
   const filteredTickets = issues
     .filter((ticket) => {
       if (statusFilter !== 'All' && ticket.status !== statusFilter) return false;
-
       if (searchQuery.trim()) {
-        const queryLower = searchQuery.toLowerCase();
-        const matchesTitle = ticket.title?.toLowerCase().includes(queryLower);
-        const matchesDesc = ticket.description?.toLowerCase().includes(queryLower);
-        const matchesCategory = ticket.category?.toLowerCase().includes(queryLower);
-        const matchesUser = ticket.userEmail?.toLowerCase().includes(queryLower) || 
-                            ticket.userName?.toLowerCase().includes(queryLower);
-
-        return matchesTitle || matchesDesc || matchesCategory || matchesUser;
+        const q = searchQuery.toLowerCase();
+        return (
+          ticket.title?.toLowerCase().includes(q) ||
+          ticket.description?.toLowerCase().includes(q) ||
+          ticket.category?.toLowerCase().includes(q) ||
+          ticket.userEmail?.toLowerCase().includes(q) ||
+          ticket.userName?.toLowerCase().includes(q)
+        );
       }
       return true;
     })
     .sort((a, b) => {
-      const timeA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
-      const timeB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
-      return timeB - timeA;
+      const tA = a.updatedAt?.seconds || a.createdAt?.seconds || 0;
+      const tB = b.updatedAt?.seconds || b.createdAt?.seconds || 0;
+      return tB - tA;
     });
 
-  // Actions
+  // --- Actions ---
   const handleMarkInProgress = async () => {
     if (!selectedTicket) return;
     try {
@@ -273,7 +293,6 @@ const AdminSupport = () => {
   const handleSendAdminReply = async (e) => {
     e.preventDefault();
     if (!replyText.trim() || replying || !selectedTicket) return;
-
     setReplying(true);
     try {
       await addIssueComment(selectedTicket.userId, selectedTicket.id, {
@@ -291,200 +310,289 @@ const AdminSupport = () => {
 
   const getCategoryLabel = (cat) => {
     const labels = {
-      bug: "Bug Report",
-      feature: "Feature Request",
-      expense: "Expense Tracker",
-      itinerary: "Itinerary Planner",
-      general: "General Inquiry",
+      bug: 'Bug Report',
+      feature: 'Feature Request',
+      expense: 'Expense Tracker',
+      itinerary: 'Itinerary Planner',
+      general: 'General Inquiry',
     };
-    return labels[cat] || cat;
+    return labels[cat] || cat || 'Unknown';
   };
+
+  // KPI cards config
+  const kpiCards = [
+    {
+      id: 'total',
+      label: 'Total Issues',
+      value: totalIssues,
+      icon: <IoTicketOutline />,
+      color: '#a78bfa',
+      bg: 'rgba(167,139,250,0.08)',
+      border: 'rgba(167,139,250,0.2)',
+    },
+    {
+      id: 'open',
+      label: 'Open',
+      value: openCount,
+      icon: <IoFolderOpenOutline />,
+      color: '#f87171',
+      bg: 'rgba(239,68,68,0.07)',
+      border: 'rgba(239,68,68,0.2)',
+    },
+    {
+      id: 'inprogress',
+      label: 'In Progress',
+      value: progressCount,
+      icon: <IoHammerOutline />,
+      color: '#fbbf24',
+      bg: 'rgba(245,158,11,0.07)',
+      border: 'rgba(245,158,11,0.2)',
+    },
+    {
+      id: 'resolved',
+      label: 'Resolved',
+      value: resolvedCount,
+      icon: <IoCheckmarkDoneOutline />,
+      color: '#34d399',
+      bg: 'rgba(52,211,153,0.07)',
+      border: 'rgba(52,211,153,0.2)',
+    },
+    {
+      id: 'closed',
+      label: 'Closed',
+      value: closedCount,
+      icon: <IoCheckmarkCircleOutline />,
+      color: '#94a3b8',
+      bg: 'rgba(148,163,184,0.07)',
+      border: 'rgba(148,163,184,0.2)',
+    },
+    {
+      id: 'avgtime',
+      label: 'Avg. Resolution',
+      value: avgResolutionDays === '—' ? '—' : `${avgResolutionDays}d`,
+      icon: <IoTimeOutline />,
+      color: '#60a5fa',
+      bg: 'rgba(96,165,250,0.07)',
+      border: 'rgba(96,165,250,0.2)',
+    },
+  ];
 
   return (
     <div className="admin-support-page">
       <div className="admin-support-inner animate-fade-in-up">
-        
-        {/* Wireframe Header */}
+
+        {/* Header */}
         <div className="dashboard-top-header">
           <div className="header-left">
             <div className="dashboard-logo-icon">
               <IoAnalyticsOutline />
             </div>
-            <h1 className="dashboard-title">Complaint Analytics Dashboard</h1>
+            <div>
+              <h1 className="dashboard-title">Complaint Analytics Dashboard</h1>
+              <p className="dashboard-subtitle">Live data · {totalIssues} total {totalIssues === 1 ? 'issue' : 'issues'}</p>
+            </div>
           </div>
           <div className="header-right">
             <div className="admin-user-avatar">
-              {userProfile?.displayName?.[0] || 'A'}
+              {userProfile?.displayName?.[0]?.toUpperCase() || 'A'}
             </div>
           </div>
         </div>
 
-        {/* 3 Columns Stat Grid (Category Trends, Resolution Spline, Donut Status) */}
-        <div className="analytics-charts-grid">
-          
-          {/* Card 1: Category Trends */}
-          <div className="analytics-card glass">
-            <h3 className="analytics-card-title">Complaint Category Trends</h3>
-            <div className="trends-chart-container">
-              {[
-                { label: 'Product', value: catProduct, color: 'var(--text-primary)' },
-                { label: 'Service', value: catService, color: 'var(--text-secondary)' },
-                { label: 'Billing', value: catBilling, color: 'var(--text-tertiary)' },
-                { label: 'Other', value: catOther, color: 'var(--text-muted)' }
-              ].map(cat => (
-                <div className="trend-row" key={cat.label}>
-                  <span className="trend-lbl">{cat.label}</span>
-                  <div className="trend-bar-wrapper">
-                    <div 
-                      className="trend-bar-fill" 
-                      style={{ 
-                        width: `${Math.max(8, (cat.value / maxCatVal) * 100)}%`,
-                        backgroundColor: cat.color
-                      }} 
-                    />
-                  </div>
-                  <span className="trend-val">{cat.value}</span>
-                </div>
-              ))}
+        {/* KPI Stat Cards Row */}
+        <div className="kpi-cards-row">
+          {kpiCards.map((card) => (
+            <div
+              key={card.id}
+              className="kpi-card"
+              style={{
+                '--kpi-color': card.color,
+                '--kpi-bg': card.bg,
+                '--kpi-border': card.border,
+              }}
+            >
+              <div className="kpi-icon-wrap">{card.icon}</div>
+              <div className="kpi-info">
+                <span className="kpi-value">{card.value}</span>
+                <span className="kpi-label">{card.label}</span>
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* 3-Column Analytics Charts */}
+        <div className="analytics-charts-grid">
+
+          {/* Card 1: Category Breakdown */}
+          <div className="analytics-card glass">
+            <h3 className="analytics-card-title">Issue Category Breakdown</h3>
+            {totalIssues === 0 ? (
+              <div className="chart-no-data">No data yet</div>
+            ) : (
+              <div className="trends-chart-container">
+                {categories.map((cat) => (
+                  <div className="trend-row" key={cat.label}>
+                    <span className="trend-lbl">{cat.label}</span>
+                    <div className="trend-bar-wrapper">
+                      <div
+                        className="trend-bar-fill"
+                        style={{
+                          width: `${Math.max(cat.value > 0 ? 6 : 0, (cat.value / maxCatVal) * 100)}%`,
+                          backgroundColor: cat.color,
+                        }}
+                      />
+                    </div>
+                    <span className="trend-val">{cat.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Card 2: Resolution Time (Avg. Days) */}
+          {/* Card 2: Resolution Time (last 6 months) */}
           <div className="analytics-card glass">
-            <h3 className="analytics-card-title">Resolution Time (Avg. Days)</h3>
+            <h3 className="analytics-card-title">
+              Avg. Resolution Time
+              <span className="chart-subtitle"> (days · last 6 months)</span>
+            </h3>
             <div className="spline-chart-container">
               <svg viewBox="0 0 280 100" className="spline-svg" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="curveAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="#ffffff" stopOpacity="0.00" />
+                    <stop offset="0%"   stopColor="#60a5fa" stopOpacity="0.18" />
+                    <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.00" />
                   </linearGradient>
                 </defs>
-                {/* Horizontal Grid lines */}
-                <line x1="10" y1="25" x2="270" y2="25" stroke="var(--border)" strokeWidth="0.5" strokeDasharray="3 3" />
+                {/* Grid lines */}
+                <line x1="10" y1="25"   x2="270" y2="25"   stroke="var(--border)" strokeWidth="0.5" strokeDasharray="3 3" />
                 <line x1="10" y1="57.5" x2="270" y2="57.5" stroke="var(--border)" strokeWidth="0.5" strokeDasharray="3 3" />
-                <line x1="10" y1="90" x2="270" y2="90" stroke="var(--border)" strokeWidth="1" />
-                
-                {/* Area under curve */}
-                <path d={areaPath} fill="url(#curveAreaGrad)" />
+                <line x1="10" y1="90"   x2="270" y2="90"   stroke="var(--border)" strokeWidth="1" />
 
-                {/* Spline Path */}
-                <path d={linePath} fill="none" stroke="var(--text-primary)" strokeWidth="1.5" />
-
-                {/* Nodes */}
-                {points.map((p, i) => (
-                  <g key={i}>
-                    <circle 
-                      cx={p.x} 
-                      cy={p.y} 
-                      r="3.5" 
-                      fill="var(--bg-secondary)" 
-                      stroke="var(--text-primary)" 
-                      strokeWidth="1.5" 
-                    />
-                    <title>{p.month}: {p.val} days</title>
-                  </g>
-                ))}
+                {resolvedCount > 0 ? (
+                  <>
+                    <path d={areaPath} fill="url(#curveAreaGrad)" />
+                    <path d={linePath} fill="none" stroke="#60a5fa" strokeWidth="1.8" />
+                    {resolutionPoints.map((p, i) =>
+                      p.hasData ? (
+                        <g key={i}>
+                          <circle
+                            cx={p.x} cy={p.y} r="3.5"
+                            fill="var(--bg-secondary)"
+                            stroke="#60a5fa"
+                            strokeWidth="1.8"
+                          />
+                          <title>{p.month}: {p.val} days avg</title>
+                        </g>
+                      ) : null
+                    )}
+                  </>
+                ) : (
+                  <text x="140" y="55" textAnchor="middle" fill="var(--text-muted)" fontSize="9">
+                    No resolved issues yet
+                  </text>
+                )}
               </svg>
               <div className="spline-x-axis">
-                {monthNames.map(m => (
-                  <span key={m} className="x-lbl">{m}</span>
+                {last6Months.map((m) => (
+                  <span key={`${m.year}-${m.month}`} className="x-lbl">
+                    {m.short}
+                  </span>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Card 3: Complaint Status Distribution */}
+          {/* Card 3: Status Donut */}
           <div className="analytics-card glass">
-            <h3 className="analytics-card-title">Complaint Status Distribution</h3>
+            <h3 className="analytics-card-title">Status Distribution</h3>
             <div className="pie-chart-wrapper">
               <div className="donut-canvas">
                 <svg viewBox="0 0 140 140" className="donut-svg">
-                  {/* Segment 1: Open */}
-                  <circle
-                    cx="70"
-                    cy="70"
-                    r="42"
-                    fill="transparent"
-                    stroke="#222222"
-                    strokeWidth="12"
-                    strokeDasharray="263.8"
-                    strokeDashoffset="0"
-                    transform="rotate(-90 70 70)"
-                  />
-                  {/* Segment 2: In Progress */}
-                  {pProgress > 0 && (
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r="42"
-                      fill="transparent"
-                      stroke="#555555"
-                      strokeWidth="12"
-                      strokeDasharray="263.8"
-                      strokeDashoffset={-263.8 * (pOpen / 100)}
-                      transform="rotate(-90 70 70)"
-                    />
+                  {totalIssues === 0 ? (
+                    <>
+                      <circle cx="70" cy="70" r="42" fill="transparent" stroke="var(--bg-elevated)" strokeWidth="12" />
+                      <text x="70" y="75" textAnchor="middle" fill="var(--text-muted)" fontSize="8">No data</text>
+                    </>
+                  ) : (
+                    <>
+                      {/* Base track */}
+                      <circle cx="70" cy="70" r="42" fill="transparent" stroke="#1a1a2e" strokeWidth="12" strokeDasharray="263.8" strokeDashoffset="0" transform="rotate(-90 70 70)" />
+                      {/* Open segment */}
+                      {pOpen > 0 && (
+                        <circle cx="70" cy="70" r="42" fill="transparent" stroke="#ef4444" strokeWidth="12"
+                          strokeDasharray={`${(pOpen / 100) * 263.8} 263.8`}
+                          strokeDashoffset="0"
+                          transform="rotate(-90 70 70)" />
+                      )}
+                      {/* In Progress segment */}
+                      {pProgress > 0 && (
+                        <circle cx="70" cy="70" r="42" fill="transparent" stroke="#f59e0b" strokeWidth="12"
+                          strokeDasharray={`${(pProgress / 100) * 263.8} 263.8`}
+                          strokeDashoffset={-263.8 * (pOpen / 100)}
+                          transform="rotate(-90 70 70)" />
+                      )}
+                      {/* Resolved segment */}
+                      {pResolved > 0 && (
+                        <circle cx="70" cy="70" r="42" fill="transparent" stroke="#10b981" strokeWidth="12"
+                          strokeDasharray={`${(pResolved / 100) * 263.8} 263.8`}
+                          strokeDashoffset={-263.8 * ((pOpen + pProgress) / 100)}
+                          transform="rotate(-90 70 70)" />
+                      )}
+                      {/* Closed segment */}
+                      {pClosed > 0 && (
+                        <circle cx="70" cy="70" r="42" fill="transparent" stroke="#64748b" strokeWidth="12"
+                          strokeDasharray={`${(pClosed / 100) * 263.8} 263.8`}
+                          strokeDashoffset={-263.8 * ((pOpen + pProgress + pResolved) / 100)}
+                          transform="rotate(-90 70 70)" />
+                      )}
+                      <text x="70" y="67" textAnchor="middle" fill="var(--text-primary)" fontSize="15" fontWeight="700">{totalIssues}</text>
+                      <text x="70" y="80" textAnchor="middle" fill="var(--text-tertiary)" fontSize="7.5" fontWeight="600" letterSpacing="0.06em">ISSUES</text>
+                    </>
                   )}
-                  {/* Segment 3: Resolved */}
-                  {pResolved > 0 && (
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r="42"
-                      fill="transparent"
-                      stroke="#888888"
-                      strokeWidth="12"
-                      strokeDasharray="263.8"
-                      strokeDashoffset={-263.8 * ((pOpen + pProgress) / 100)}
-                      transform="rotate(-90 70 70)"
-                    />
-                  )}
-                  {/* Segment 4: Closed */}
-                  {pClosed > 0 && (
-                    <circle
-                      cx="70"
-                      cy="70"
-                      r="42"
-                      fill="transparent"
-                      stroke="#cccccc"
-                      strokeWidth="12"
-                      strokeDasharray="263.8"
-                      strokeDashoffset={-263.8 * ((pOpen + pProgress + pResolved) / 100)}
-                      transform="rotate(-90 70 70)"
-                    />
-                  )}
-                  
-                  {/* Total centered readout */}
-                  <text x="70" y="68" textAnchor="middle" fill="var(--text-primary)" fontSize="15" fontWeight="700">{totalCount}</text>
-                  <text x="70" y="82" textAnchor="middle" fill="var(--text-tertiary)" fontSize="8" fontWeight="600" letterSpacing="0.05em">ISSUES</text>
                 </svg>
               </div>
-
-              {/* Legend with matching wireframe counts */}
               <div className="pie-legend">
-                <div className="legend-item"><span className="legend-dot" style={{ background: '#222222' }} /> Open <strong className="legend-pct">{pOpen}%</strong></div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: '#555555' }} /> In Progress <strong className="legend-pct">{pProgress}%</strong></div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: '#888888' }} /> Resolved <strong className="legend-pct">{pResolved}%</strong></div>
-                <div className="legend-item"><span className="legend-dot" style={{ background: '#cccccc' }} /> Closed <strong className="legend-pct">{pClosed}%</strong></div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#ef4444' }} />
+                  Open
+                  <strong className="legend-pct">{openCount} <span className="legend-pct-paren">({pOpen}%)</span></strong>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#f59e0b' }} />
+                  In Progress
+                  <strong className="legend-pct">{progressCount} <span className="legend-pct-paren">({pProgress}%)</span></strong>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#10b981' }} />
+                  Resolved
+                  <strong className="legend-pct">{resolvedCount} <span className="legend-pct-paren">({pResolved}%)</span></strong>
+                </div>
+                <div className="legend-item">
+                  <span className="legend-dot" style={{ background: '#64748b' }} />
+                  Closed
+                  <strong className="legend-pct">{closedCount} <span className="legend-pct-paren">({pClosed}%)</span></strong>
+                </div>
               </div>
             </div>
           </div>
 
         </div>
 
-        {/* Live Workspace Grid: Queue List (Left) + Interactive Chat (Right) */}
+        {/* Live Workspace: Queue List + Chat Console */}
         <div className="workspace-layout-panel">
-          
-          {/* Recent Complaints Queue list */}
+
+          {/* Queue Side */}
           <div className="complaints-queue-side glass">
             <div className="queue-header-box">
-              <h3 className="queue-side-title">Recent Complaints</h3>
+              <div className="queue-header-top-row">
+                <h3 className="queue-side-title">All Complaints</h3>
+                <span className="queue-count-badge">{filteredTickets.length}</span>
+              </div>
               <div className="queue-search-control">
                 <IoSearchOutline className="search-icon-glass" />
                 <input
                   type="text"
-                  placeholder="Filter traveler queries, subject or email..."
+                  placeholder="Search by user, subject, category or email..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="queue-search-field"
@@ -498,6 +606,11 @@ const AdminSupport = () => {
                     onClick={() => setStatusFilter(tab)}
                   >
                     {tab}
+                    {tab !== 'All' && (
+                      <span className="pill-count">
+                        {issues.filter((i) => i.status === tab).length}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -506,12 +619,12 @@ const AdminSupport = () => {
             {loading ? (
               <div className="queue-loading-spinner">
                 <span className="spinner-glow" />
-                <p>Syncing travel complaints...</p>
+                <p>Syncing complaints from Firestore...</p>
               </div>
             ) : filteredTickets.length === 0 ? (
               <div className="queue-empty-prompt">
                 <IoChatbubbleEllipsesOutline />
-                <p>No matching traveler queries found.</p>
+                <p>{totalIssues === 0 ? 'No complaints submitted yet.' : 'No matching complaints found.'}</p>
               </div>
             ) : (
               <div className="queue-rows-container">
@@ -522,7 +635,7 @@ const AdminSupport = () => {
                     onClick={() => setSelectedTicket(ticket)}
                   >
                     <div className="row-card-top">
-                      <span className="row-user-badge">👤 {ticket.userName || 'Traveler'}</span>
+                      <span className="row-user-badge">👤 {ticket.userName || ticket.userEmail || 'Traveler'}</span>
                       <span className={`status-pill pill-${ticket.status.toLowerCase().replace(' ', '-')}`}>
                         {ticket.status}
                       </span>
@@ -532,8 +645,12 @@ const AdminSupport = () => {
                     <div className="row-card-bottom">
                       <span className="row-category-lbl">🏷️ {getCategoryLabel(ticket.category)}</span>
                       <span className="row-date-lbl">
-                        {ticket.createdAt?.seconds 
-                          ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                        {ticket.createdAt?.seconds
+                          ? new Date(ticket.createdAt.seconds * 1000).toLocaleDateString([], {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })
                           : 'Just now'}
                       </span>
                     </div>
@@ -543,16 +660,16 @@ const AdminSupport = () => {
             )}
           </div>
 
-          {/* Interactive Chat Console Workspace */}
+          {/* Chat Console Side */}
           <div className="chat-console-side glass">
             {selectedTicket ? (
               <div className="console-discussion">
-                
+
                 {/* Console Header */}
                 <div className="console-disc-header">
                   <div className="console-user-meta">
                     <span className="console-user-name">👤 {selectedTicket.userName || 'Traveler'}</span>
-                    <span className="console-user-email">✉️ {selectedTicket.userEmail || `ID: ${selectedTicket.userId}`}</span>
+                    <span className="console-user-email">✉️ {selectedTicket.userEmail || `UID: ${selectedTicket.userId}`}</span>
                     <h2 className="console-disc-title truncate">{selectedTicket.title}</h2>
                   </div>
                   <div className="console-action-badges">
@@ -562,44 +679,52 @@ const AdminSupport = () => {
                   </div>
                 </div>
 
-                {/* Discussion timeline feed */}
+                {/* Body */}
                 <div className="console-disc-body">
-                  
-                  {/* Original traveler submission details block */}
+
+                  {/* Original ticket info */}
                   <div className="console-original-query-card">
-                    <span className="original-label">Traveler Ticket Issue Description</span>
+                    <span className="original-label">Traveler Ticket — Issue Description</span>
                     <span className="original-category-badge">{getCategoryLabel(selectedTicket.category)}</span>
                     <p className="original-desc-text">{selectedTicket.description}</p>
-                    
+
+                    {selectedTicket.createdAt?.seconds && (
+                      <span className="original-timestamp">
+                        📅 Submitted: {new Date(selectedTicket.createdAt.seconds * 1000).toLocaleString([], {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </span>
+                    )}
+
                     {selectedTicket.photoUrl && (
                       <div className="original-attachment-wrapper">
-                        <img 
-                          src={selectedTicket.photoUrl} 
-                          alt="Screenshot upload" 
+                        <img
+                          src={selectedTicket.photoUrl}
+                          alt="Screenshot upload"
                           className="attachment-thumbnail-img"
                           onClick={() => setLightboxUrl(selectedTicket.photoUrl)}
                         />
-                        <span className="attachment-filename-lbl">📷 user_screenshot_proof.png (Click to Zoom)</span>
+                        <span className="attachment-filename-lbl">📷 Attachment (Click to zoom)</span>
                       </div>
                     )}
 
-                    {/* Admin Status Controls Actions Row */}
+                    {/* Admin Action Buttons */}
                     <div className="admin-console-actions-row">
                       {selectedTicket.status === 'Open' && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           icon={<IoHammerOutline />}
                           onClick={handleMarkInProgress}
-                          style={{ border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', background: 'rgba(245, 158, 11, 0.05)', padding: '6px 12px' }}
+                          style={{ border: '1px solid rgba(245,158,11,0.4)', color: '#fbbf24', background: 'rgba(245,158,11,0.05)', padding: '6px 12px' }}
                         >
                           Mark In Progress
                         </Button>
                       )}
-                      
                       {selectedTicket.status !== 'Resolved' && selectedTicket.status !== 'Closed' && (
-                        <Button 
-                          size="sm" 
+                        <Button
+                          size="sm"
                           icon={<IoCheckmarkCircleOutline />}
                           onClick={handleResolveTicket}
                           style={{ background: '#10b981', color: '#fff', padding: '6px 12px' }}
@@ -607,67 +732,60 @@ const AdminSupport = () => {
                           Mark Resolved
                         </Button>
                       )}
-
                       {selectedTicket.status === 'Resolved' && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           icon={<IoClose />}
                           onClick={handleCloseTicket}
-                          style={{ border: '1px solid rgba(255, 255, 255, 0.2)', color: 'var(--text-secondary)', padding: '6px 12px' }}
+                          style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-secondary)', padding: '6px 12px' }}
                         >
                           Close Ticket
                         </Button>
                       )}
-                      
                       {(selectedTicket.status === 'Resolved' || selectedTicket.status === 'Closed') && (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           icon={<IoRefreshOutline />}
                           onClick={handleReopenTicket}
-                          style={{ border: '1px solid rgba(255, 255, 255, 0.2)', color: 'var(--text-secondary)', padding: '6px 12px' }}
+                          style={{ border: '1px solid rgba(255,255,255,0.2)', color: 'var(--text-secondary)', padding: '6px 12px' }}
                         >
-                          Reopen Ticket
+                          Reopen
                         </Button>
                       )}
                     </div>
                   </div>
 
-                  {/* Comments feed rendering */}
-                  {comments.map((comment) => (
+                  {/* Comments */}
+                  {comments.map((comment) =>
                     comment.sender === 'system' ? (
                       <div key={comment.id} className="console-system-msg-badge">
                         <span>⚙️ {comment.text}</span>
                       </div>
                     ) : (
-                      // Align Support messages to the RIGHT, Travelers' to the LEFT
-                      <div 
-                        key={comment.id} 
+                      <div
+                        key={comment.id}
                         className={`console-chat-wrapper ${comment.sender === 'support' ? 'support-bubble-side' : 'user-bubble-side'}`}
                       >
                         <span className="chat-sender-name">
                           {comment.senderName}
-                          {comment.sender === 'support' && (
-                            <span className="staff-badge">Staff</span>
-                          )}
+                          {comment.sender === 'support' && <span className="staff-badge">Staff</span>}
                         </span>
-                        <div className="chat-text-bubble">
-                          {comment.text}
-                        </div>
+                        <div className="chat-text-bubble">{comment.text}</div>
                         <span className="chat-timestamp-lbl">
-                          {comment.createdAt?.seconds 
+                          {comment.createdAt?.seconds
                             ? new Date(comment.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                             : 'Sending...'}
                         </span>
                       </div>
                     )
-                  ))}
+                  )}
 
                   <div ref={commentsEndRef} />
                 </div>
 
-                {/* Send chat response form */}
+                {/* Reply Footer */}
                 <form className="console-discussion-footer" onSubmit={handleSendAdminReply}>
                   <div className="discussion-input-wrapper">
                     <textarea
@@ -698,22 +816,20 @@ const AdminSupport = () => {
 
               </div>
             ) : (
-              // Default Welcome screen when no query is selected
               <div className="console-empty-prompt">
                 <IoAlertCircleOutline className="empty-logo-icon" />
                 <h3 className="empty-title">Select a traveler query</h3>
                 <p className="empty-desc">
-                  Select any active query card from the queue on the left side to load traveler details, review screenshot attachments, adjust states, and chat in real-time.
+                  Pick any complaint from the queue on the left to view full details, manage status, and chat in real-time.
                 </p>
               </div>
             )}
           </div>
 
         </div>
-
       </div>
 
-      {/* Screenshot Lightbox zoomed overlay */}
+      {/* Lightbox */}
       {lightboxUrl && (
         <div className="lightbox-overlay" onClick={() => setLightboxUrl('')}>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
@@ -724,7 +840,6 @@ const AdminSupport = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };
