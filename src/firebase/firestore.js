@@ -42,8 +42,8 @@ export const updateTrip = async (userId, tripId, tripData) => {
 };
 
 export const deleteTrip = async (userId, tripId) => {
-  // Delete subcollections first
-  const subcollections = ["itinerary", "expenses", "journal"];
+  // Delete subcollections first (including packing)
+  const subcollections = ["itinerary", "expenses", "journal", "packing"];
   for (const sub of subcollections) {
     const snap = await getDocs(collection(db, "users", userId, "trips", tripId, sub));
     for (const d of snap.docs) {
@@ -263,4 +263,33 @@ export const subscribeToAllIssues = (callback) => {
   );
 };
 
+// ============ PACKING ============
+export const subscribeToPackingItems = (userId, tripId, callback) => {
+  const q = query(
+    collection(db, "users", userId, "trips", tripId, "packing"),
+    orderBy("createdAt", "asc")
+  );
+  return onSnapshot(q, (snapshot) => {
+    const items = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    callback(items);
+  });
+};
 
+export const addPackingItem = async (userId, tripId, itemData) => {
+  const ref = await addDoc(
+    collection(db, "users", userId, "trips", tripId, "packing"),
+    { ...itemData, checked: false, createdAt: serverTimestamp() }
+  );
+  return ref.id;
+};
+
+export const updatePackingItem = async (userId, tripId, itemId, data) => {
+  await updateDoc(
+    doc(db, "users", userId, "trips", tripId, "packing", itemId),
+    data
+  );
+};
+
+export const deletePackingItem = async (userId, tripId, itemId) => {
+  await deleteDoc(doc(db, "users", userId, "trips", tripId, "packing", itemId));
+};

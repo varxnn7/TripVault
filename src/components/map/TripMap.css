@@ -1,0 +1,245 @@
+/* ============================================================
+   TripVault – TripMap Styles
+   Aligns OpenStreetMap tiles & Leaflet UI elements with dark theme
+   ============================================================ */
+
+.trip-map-modal-content {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  min-height: 400px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Map wrapper & leafelt container ─────────────────────── */
+.map-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+.map-leaflet-element {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* ── dark mode filter for openstreetmap tiles ────────────── */
+.map-leaflet-element .leaflet-tile-container {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(85%);
+}
+
+.map-leaflet-element .leaflet-container {
+  background: var(--bg-primary);
+  font-family: var(--font-family);
+}
+
+/* Customize Leaflet Control Buttons (Zoom +/-) */
+.map-leaflet-element .leaflet-bar {
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-md) !important;
+  border-radius: var(--radius-sm) !important;
+  overflow: hidden;
+}
+
+.map-leaflet-element .leaflet-bar a {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border) !important;
+  transition: background-color var(--transition-fast) !important;
+}
+
+.map-leaflet-element .leaflet-bar a:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.map-leaflet-element .leaflet-bar a.leaflet-disabled {
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Coordinates info badge ───────────────────────────────── */
+.map-coordinates-badge {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 1000; /* Must overlay Leaflet overlays */
+  background: rgba(10, 10, 10, 0.75);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+
+.map-coordinates-badge span {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+/* ── Loading and Error containers ─────────────────────────── */
+.map-loader-container,
+.map-error-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elevated);
+  z-index: 10;
+  padding: 24px;
+}
+
+.map-error-emoji {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.map-error-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 16px;
+  max-width: 320px;
+}
+
+.map-retry-btn {
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 8px 20px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.map-retry-btn:hover {
+  background: var(--accent-hover);
+}
+
+/* ── Custom Pulsing Marker ─────────────────────────────────── */
+.modern-map-marker {
+  background: transparent;
+  border: none;
+}
+
+.marker-container {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-dot {
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  z-index: 3;
+}
+
+.marker-glow {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  z-index: 2;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.marker-pulse {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: mapPulse 1.8s infinite ease-out;
+  z-index: 1;
+  opacity: 0;
+}
+
+@keyframes mapPulse {
+  0% {
+    transform: scale(0.3);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* ── Custom popup details card ────────────────────────────── */
+.map-popup-card {
+  padding: 4px 6px;
+  text-align: center;
+}
+
+.map-popup-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #000000; /* Leaflet popup contents require dark text on default light bubbles */
+  margin: 0 0 4px 0;
+}
+
+.map-popup-card p {
+  font-size: 0.75rem;
+  color: #555555;
+  margin: 0;
+}
+
+/* Leaflet Popup Styling Overrides */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+}
+
+/* Attribution text color matching dark mode */
+.map-leaflet-element .leaflet-control-attribution {
+  background: rgba(10, 10, 10, 0.6) !important;
+  color: var(--text-muted) !important;
+}
+
+.map-leaflet-element .leaflet-control-attribution a {
+  color: var(--text-tertiary) !important;
+}
+
+/* ── Responsive adjustments ────────────────────────────────── */
+@media (max-width: 768px) {
+  .trip-map-modal-content {
+    height: 380px;
+  }
+  .map-coordinates-badge {
+    bottom: 12px;
+    left: 12px;
+    padding: 6px 12px;
+  }
+  .map-coordinates-badge span {
+    font-size: 0.7rem;
+  }
+}

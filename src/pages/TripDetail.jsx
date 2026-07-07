@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   IoLocation, IoCalendar, IoWallet, IoTrash, IoPencil,
-  IoArrowBack, IoMap, IoReceipt, IoJournal, IoInformation
+  IoArrowBack, IoMap, IoReceipt, IoJournal, IoInformation, IoBag
 } from 'react-icons/io5';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -18,13 +18,16 @@ import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
 import WeatherWidget from '../components/weather/WeatherWidget';
+import PackingTab from '../components/packing/PackingTab';
+import TripMap from '../components/map/TripMap';
 import './TripDetail.css';
 
 const tabs = [
-  { id: 'overview', label: 'Overview', icon: <IoInformation /> },
+  { id: 'overview',  label: 'Overview',  icon: <IoInformation /> },
   { id: 'itinerary', label: 'Itinerary', icon: <IoMap /> },
-  { id: 'expenses', label: 'Expenses', icon: <IoReceipt /> },
-  { id: 'journal', label: 'Journal', icon: <IoJournal /> },
+  { id: 'expenses',  label: 'Expenses',  icon: <IoReceipt /> },
+  { id: 'journal',   label: 'Journal',   icon: <IoJournal /> },
+  { id: 'packing',   label: 'Packing',   icon: <IoBag /> },
 ];
 
 const TripDetail = () => {
@@ -40,6 +43,7 @@ const TripDetail = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
 
   const currency = userProfile?.currency || 'INR';
 
@@ -131,7 +135,9 @@ const TripDetail = () => {
             </span>
             <h1 className="text-h1 trip-title">{trip.title}</h1>
             <div className="trip-meta-row">
-              <span className="trip-meta"><IoLocation /> {trip.destination}</span>
+              <span className="trip-meta clickable-meta" onClick={() => setShowMapModal(true)} title="View on Map">
+                <IoLocation /> {trip.destination}
+              </span>
               {trip.startDate && (
                 <span className="trip-meta"><IoCalendar /> {formatDate(trip.startDate)}{trip.endDate ? ` – ${formatDate(trip.endDate)}` : ''}</span>
               )}
@@ -163,7 +169,7 @@ const TripDetail = () => {
           {activeTab === 'overview' && (
             <div className="overview-content">
               <div className="overview-grid">
-                <div className="overview-card glass">
+                <div className="overview-card glass clickable-card" onClick={() => setShowMapModal(true)} title="Click to view Map">
                   <span className="text-label">Destination</span>
                   <h3>{trip.destination}</h3>
                 </div>
@@ -192,8 +198,9 @@ const TripDetail = () => {
             </div>
           )}
           {activeTab === 'itinerary' && <ItineraryTab tripId={id} trip={trip} />}
-          {activeTab === 'expenses' && <ExpenseTab tripId={id} currency={currency} trip={trip} />}
-          {activeTab === 'journal' && <JournalTab tripId={id} />}
+          {activeTab === 'expenses'  && <ExpenseTab tripId={id} currency={currency} trip={trip} />}
+          {activeTab === 'journal'   && <JournalTab tripId={id} />}
+          {activeTab === 'packing'   && <PackingTab tripId={id} />}
         </div>
       </div>
 
@@ -247,6 +254,15 @@ const TripDetail = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Map Dialog */}
+      {trip.destination && (
+        <TripMap
+          destination={trip.destination}
+          isOpen={showMapModal}
+          onClose={() => setShowMapModal(false)}
+        />
+      )}
     </div>
   );
 };
