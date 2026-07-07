@@ -1,0 +1,337 @@
+/* ============================================================
+   TripVault – WeatherWidget Styles
+   Follows existing design system vars from index.css
+   ============================================================ */
+
+/* ── Outer container ─────────────────────────────────────── */
+.ww-widget {
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow: hidden;
+}
+
+/* ── Header row ──────────────────────────────────────────── */
+.ww-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ww-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ww-icon-big {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.ww-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.ww-location {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin: 4px 0 0;
+}
+
+.ww-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ww-credit {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ww-credit:hover {
+  color: var(--text-tertiary);
+}
+
+.ww-refresh-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  background: var(--accent-dim);
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.ww-refresh-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.ww-refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Spin animation for refresh icon ─────────────────────── */
+.ww-spin {
+  display: inline-block;
+  animation: spin 0.9s linear infinite;
+}
+
+/* ── Section (Past / Forecast) ───────────────────────────── */
+.ww-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ww-section-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* ── Horizontally scrollable strip ───────────────────────── */
+.ww-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.ww-strip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.ww-strip::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ww-strip::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-full);
+}
+
+/* ── Individual day card ─────────────────────────────────── */
+.ww-card {
+  flex-shrink: 0;
+  width: 88px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+  cursor: default;
+}
+
+.ww-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-light);
+}
+
+/* Today card gets a subtle highlight */
+.ww-card-today {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ww-today-badge {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  padding: 2px 7px;
+  border-radius: 0 0 6px 6px;
+}
+
+.ww-day-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: 6px;
+}
+
+.ww-short-date {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.ww-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin: 4px 0;
+}
+
+.ww-label {
+  font-size: 0.62rem;
+  color: var(--text-tertiary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Temperature display ─────────────────────────────────── */
+.ww-temps {
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  margin-top: 2px;
+}
+
+.ww-temp {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ww-temp-high {
+  color: var(--text-primary);
+}
+
+.ww-temp-low {
+  color: var(--text-tertiary);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+
+/* ── Precipitation bar ───────────────────────────────────── */
+.ww-precip {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ww-precip-bar {
+  width: 68px;
+  height: 3px;
+  background: var(--border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.ww-precip-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.9));
+  border-radius: var(--radius-full);
+  transition: width 0.6s ease;
+}
+
+.ww-precip-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+/* ── Skeleton loading cards ──────────────────────────────── */
+.ww-skeleton {
+  pointer-events: none;
+}
+
+.ww-sk-bar {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--bg-hover) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.ww-sk-day   { width: 36px; height: 10px; margin-top: 6px; }
+.ww-sk-emoji { width: 30px; height: 30px; border-radius: 50%; margin: 4px 0; }
+.ww-sk-temp  { width: 44px; height: 14px; }
+.ww-sk-label { width: 56px; height: 8px; }
+
+/* ── Error state ─────────────────────────────────────────── */
+.ww-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.ww-error-emoji {
+  font-size: 2.4rem;
+}
+
+.ww-error-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.ww-retry-btn {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--accent-dim);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-family: var(--font-family);
+  outline: none;
+}
+
+.ww-retry-btn:hover {
+  background: var(--bg-hover);
+}
+
+/* ── Responsive: smaller cards on mobile ─────────────────── */
+@media (max-width: 600px) {
+  .ww-widget {
+    padding: 18px 16px;
+  }
+
+  .ww-card {
+    width: 78px;
+    padding: 12px 8px 10px;
+  }
+
+  .ww-emoji {
+    font-size: 1.5rem;
+  }
+}

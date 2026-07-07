@@ -146,9 +146,10 @@ const AdminSupport = () => {
   if (authLoading) return <Loader fullScreen text="Verifying admin credentials..." />;
   if (!user || userProfile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
 
-  // ======================================================
+
+  
   // ANALYTICS — 100% derived from live `issues` data only
-  // ======================================================
+
 
   const totalIssues = issues.length;
 

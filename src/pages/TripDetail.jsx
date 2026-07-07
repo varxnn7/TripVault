@@ -17,6 +17,7 @@ import Loader from '../components/ui/Loader';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 import Modal from '../components/ui/Modal';
 import Input from '../components/ui/Input';
+import WeatherWidget from '../components/weather/WeatherWidget';
 import './TripDetail.css';
 
 const tabs = [
@@ -184,6 +185,9 @@ const TripDetail = () => {
                   <span className="text-label">Description</span>
                   <p>{trip.description}</p>
                 </div>
+              )}
+              {trip.destination && (
+                <WeatherWidget destination={trip.destination} />
               )}
             </div>
           )}
