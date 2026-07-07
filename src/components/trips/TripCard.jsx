@@ -17,13 +17,9 @@ const TripCard = ({ trip, index }) => {
       style={{ animationDelay: `${index * 0.06}s` }}
     >
       <div className="trip-card-cover">
-        {trip.coverPhoto ? (
-          <img src={trip.coverPhoto} alt={trip.title} className="trip-cover-img" />
-        ) : (
-          <div className="trip-cover-placeholder">
-            <IoLocation />
-          </div>
-        )}
+        <div className="trip-cover-placeholder">
+          <IoLocation />
+        </div>
         <span className={`trip-status ${statusColors[trip.status] || ''}`}>
           {trip.status || 'planning'}
         </span>
