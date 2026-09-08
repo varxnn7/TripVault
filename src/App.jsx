@@ -14,6 +14,7 @@ import TripDetail from './pages/TripDetail';
 import Profile from './pages/Profile';
 import Support from './pages/Support';
 import AdminSupport from './pages/AdminSupport';
+import AIChatbot from './components/AIChatbot/AIChatbot';
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -38,6 +39,7 @@ const AppRoutes = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toast />
+      <AIChatbot />
     </>
   );
 };
