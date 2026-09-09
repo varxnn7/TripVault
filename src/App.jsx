@@ -15,6 +15,7 @@ import Profile from './pages/Profile';
 import Support from './pages/Support';
 import AdminSupport from './pages/AdminSupport';
 import AIChatbot from './components/AIChatbot/AIChatbot';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
@@ -46,13 +47,15 @@ const AppRoutes = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRoutes />
-        </ToastProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <ToastProvider>
+            <AppRoutes />
+          </ToastProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

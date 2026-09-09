@@ -32,30 +32,8 @@ export const signUpWithEmail = async (email, password, displayName) => {
 };
 
 export const signInWithEmail = async (email, password) => {
-  try {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
-  } catch (err) {
-    if (email === 'admin@tripvault.com' && password === 'AdminPassword123!') {
-      try {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(result.user, { displayName: "Admin Manager" });
-        const userRef = doc(db, "users", result.user.uid);
-        await setDoc(userRef, {
-          displayName: "Admin Manager",
-          email: email,
-          photoURL: "",
-          currency: "INR",
-          createdAt: serverTimestamp(),
-          role: "admin"
-        });
-        return result.user;
-      } catch {
-        throw err;
-      }
-    }
-    throw err;
-  }
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
 };
 
 export const signInWithGoogle = async () => {

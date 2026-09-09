@@ -1,0 +1,54 @@
+.eb-container {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.eb-card {
+  max-width: 480px;
+  width: 100%;
+  padding: 40px 32px;
+  border-radius: var(--radius-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border-light);
+}
+
+.eb-icon {
+  font-size: 2.8rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.eb-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.eb-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.eb-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .eb-actions {
+    flex-direction: column;
+  }
+}

@@ -54,17 +54,7 @@
   flex-shrink: 0;
 }
 
-.ww-credit {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-  white-space: nowrap;
-}
 
-.ww-credit:hover {
-  color: var(--text-tertiary);
-}
 
 .ww-refresh-btn {
   width: 30px;

@@ -1,0 +1,17 @@
+{
+  "name": "TripVault — Travel & Tourism Companion",
+  "short_name": "TripVault",
+  "description": "Plan itineraries, track expenses, journal memories — your all-in-one travel companion.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

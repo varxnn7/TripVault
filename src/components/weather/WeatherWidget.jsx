@@ -135,14 +135,6 @@ const WeatherWidget = ({ destination }) => {
           </div>
         </div>
         <div className="ww-header-right">
-          <a
-            href="https://open-meteo.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ww-credit"
-          >
-            Open-Meteo ↗
-          </a>
           <button className="ww-refresh-btn" onClick={load} title="Refresh weather" disabled={state.loading}>
             <span className={state.loading ? 'ww-spin' : ''}>⟳</span>
           </button>

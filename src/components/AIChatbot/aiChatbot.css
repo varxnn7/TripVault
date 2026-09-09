@@ -1,4 +1,4 @@
-﻿/* ====================================================================
+/* ====================================================================
    aiChatbot.css — TripVault AI Chatbot
    Matches TripVault's dark glassmorphism design system exactly.
    Uses only CSS variables already defined in index.css.
@@ -172,6 +172,13 @@
   animation: pulse 1.2s ease-in-out infinite;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-action-btn,
 .chat-close-btn {
   width: 30px;
   height: 30px;
@@ -186,6 +193,11 @@
   cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
+}
+
+.chat-action-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
 }
 
 .chat-close-btn:hover {
@@ -548,6 +560,159 @@
   flex-shrink: 0;
 }
 
+/* ─── Structured Trip Card in Chat ─────────────────────────────────── */
+
+.chat-trip-card {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.chat-trip-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-trip-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.chat-trip-status-created {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--success);
+  background: rgba(34, 197, 94, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.chat-trip-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.chat-trip-card-dest {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chat-trip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.chat-trip-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+}
+
+.chat-trip-chip svg {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.chat-trip-card-actions {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.chat-trip-saving {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.chat-trip-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-trip-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all var(--transition-fast);
+}
+
+.chat-trip-btn-primary {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border: none;
+}
+
+.chat-trip-btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.chat-trip-btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+}
+
+.chat-trip-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.chat-trip-btn-retry {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.chat-trip-btn-retry:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
 /* ─── Responsive ───────────────────────────────────────────────────── */
 
 @media (max-width: 480px) {
@@ -575,3 +740,4 @@
     height: 500px;
   }
 }
+
