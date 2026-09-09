@@ -1,9 +1,13 @@
-﻿/**
- * ChatMessage.jsx
- * Renders a single chat message bubble (user or AI).
- * Handles basic markdown formatting for AI responses:
- *   **bold**, bullet lines starting with "- " or "* ", paragraph breaks.
- */
+import {
+  IoAirplane,
+  IoLocation,
+  IoCalendar,
+  IoWallet,
+  IoCheckmarkCircle,
+  IoArrowForward,
+  IoRefresh,
+  IoListOutline,
+} from "react-icons/io5";
 
 const formatTime = (ts) => {
   const d = ts ? new Date(ts) : new Date();
@@ -11,7 +15,7 @@ const formatTime = (ts) => {
 };
 
 /**
- * Parse very basic markdown from AI response into React-safe elements.
+ * Parse basic markdown from AI response into React-safe elements.
  * Handles: **bold**, bullet lists (- / * / • prefixed lines), newlines.
  */
 const parseMarkdown = (text) => {
@@ -54,11 +58,10 @@ const parseMarkdown = (text) => {
 };
 
 /**
- * Apply inline formatting: **bold**, _italic_ (optional).
+ * Apply inline formatting: **bold**.
  */
 const applyInline = (text) => {
   if (!text) return null;
-  // Split on **bold** patterns
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
     if (/^\*\*[^*]+\*\*$/.test(part)) {
@@ -68,8 +71,15 @@ const applyInline = (text) => {
   });
 };
 
-const ChatMessage = ({ message, userInitial }) => {
+const ChatMessage = ({
+  message,
+  userInitial,
+  currency = "INR",
+  onNavigate,
+  onRetrySaveTrip,
+}) => {
   const isUser = message.role === "user";
+  const { tripAction, tripStatus, tripId } = message;
 
   return (
     <div className={`chat-msg ${isUser ? "chat-msg-user" : "chat-msg-ai"}`}>
@@ -83,12 +93,103 @@ const ChatMessage = ({ message, userInitial }) => {
       {/* Bubble */}
       <div className="chat-bubble">
         <div className="chat-bubble-content">
-          {isUser ? (
-            message.content
-          ) : (
-            parseMarkdown(message.content)
-          )}
+          {isUser ? message.content : parseMarkdown(message.content)}
         </div>
+
+        {/* ─── Structured Trip Action Card ─── */}
+        {tripAction && (
+          <div className="chat-trip-card animate-fade-in-up">
+            <div className="chat-trip-card-header">
+              <span className="chat-trip-badge">
+                <IoAirplane /> Trip Ready
+              </span>
+              {tripStatus === "created" && (
+                <span className="chat-trip-status-created">
+                  <IoCheckmarkCircle /> In Dashboard
+                </span>
+              )}
+            </div>
+
+            <div className="chat-trip-card-title">
+              {tripAction.title || `${tripAction.destination} Adventure`}
+            </div>
+
+            {tripAction.destination && (
+              <div className="chat-trip-card-dest">
+                <IoLocation /> {tripAction.destination}
+              </div>
+            )}
+
+            <div className="chat-trip-grid">
+              {(tripAction.startDate || tripAction.endDate) && (
+                <div className="chat-trip-chip">
+                  <IoCalendar />
+                  <span>
+                    {tripAction.startDate || "Upcoming"}
+                    {tripAction.endDate ? ` → ${tripAction.endDate}` : ""}
+                  </span>
+                </div>
+              )}
+
+              {tripAction.budget > 0 && (
+                <div className="chat-trip-chip">
+                  <IoWallet />
+                  <span>
+                    {currency} {Number(tripAction.budget).toLocaleString()}
+                  </span>
+                </div>
+              )}
+
+              {Array.isArray(tripAction.itinerary) && tripAction.itinerary.length > 0 && (
+                <div className="chat-trip-chip">
+                  <IoListOutline />
+                  <span>{tripAction.itinerary.length} Days Itinerary</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions & Status */}
+            <div className="chat-trip-card-actions">
+              {tripStatus === "saving" && (
+                <div className="chat-trip-saving">
+                  <span className="typing-dot" style={{ width: 6, height: 6 }} />
+                  <span>Saving trip & itinerary to dashboard…</span>
+                </div>
+              )}
+
+              {tripStatus === "created" && tripId && (
+                <div className="chat-trip-btn-group">
+                  <button
+                    className="chat-trip-btn chat-trip-btn-primary"
+                    onClick={() => onNavigate && onNavigate(`/trip/${tripId}`)}
+                  >
+                    <span>View Trip</span>
+                    <IoArrowForward />
+                  </button>
+                  <button
+                    className="chat-trip-btn chat-trip-btn-secondary"
+                    onClick={() => onNavigate && onNavigate("/dashboard")}
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              )}
+
+              {tripStatus === "error" && (
+                <div className="chat-trip-btn-group">
+                  <button
+                    className="chat-trip-btn chat-trip-btn-retry"
+                    onClick={onRetrySaveTrip}
+                  >
+                    <IoRefresh />
+                    <span>Save to Dashboard</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         <span className="chat-bubble-time">{formatTime(message.timestamp)}</span>
       </div>
 
